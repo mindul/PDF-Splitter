@@ -1,4 +1,5 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PDF Splitter
+PDF 파일을 업로드하면 개별 페이지로 분할하여 각각 다운로드 할 수 있는 서비스입니다.
 
 ## Getting Started
 
