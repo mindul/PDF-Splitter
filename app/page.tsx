@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 import { PDFUploader } from '@/components/pdf-uploader';
-import { PDFViewer } from '@/components/pdf-viewer';
 import { ActionBar } from '@/components/action-bar';
 import { extractPages, downloadPDF } from '@/lib/pdf-utils';
 import { FileText } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const PDFViewer = dynamic(
+  () => import('@/components/pdf-viewer').then((mod) => mod.PDFViewer),
+  { ssr: false }
+);
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);

@@ -1,11 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
 import { CheckCircle2 } from 'lucide-react';
-
-// Configure worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerProps {
   file: File;
@@ -16,12 +12,25 @@ interface PDFViewerProps {
 export function PDFViewer({ file, selectedPages, onTogglePage }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [pdfJs, setPdfJs] = useState<any>(null);
 
   useEffect(() => {
+    const initPdfJs = async () => {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+      setPdfJs(pdfjsLib);
+    };
+
+    initPdfJs();
+  }, []);
+
+  useEffect(() => {
+    if (!pdfJs) return;
+
     const loadPDF = async () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const pdf = await pdfJs.getDocument(arrayBuffer).promise;
         setNumPages(pdf.numPages);
       } catch (error) {
         console.error('Error loading PDF:', error);
@@ -31,7 +40,7 @@ export function PDFViewer({ file, selectedPages, onTogglePage }: PDFViewerProps)
     };
 
     loadPDF();
-  }, [file]);
+  }, [file, pdfJs]);
 
   if (loading) {
     return (
@@ -50,6 +59,7 @@ export function PDFViewer({ file, selectedPages, onTogglePage }: PDFViewerProps)
           file={file}
           isSelected={selectedPages.has(i + 1)}
           onClick={(e) => onTogglePage(i + 1, e.shiftKey)}
+          pdfJs={pdfJs}
         />
       ))}
     </div>
@@ -61,9 +71,10 @@ interface PageThumbnailProps {
   file: File;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
+  pdfJs: any;
 }
 
-function PageThumbnail({ pageIndex, file, isSelected, onClick }: PageThumbnailProps) {
+function PageThumbnail({ pageIndex, file, isSelected, onClick, pdfJs }: PageThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -71,11 +82,11 @@ function PageThumbnail({ pageIndex, file, isSelected, onClick }: PageThumbnailPr
     let mounted = true;
 
     const renderPage = async () => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || !pdfJs) return;
 
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const pdf = await pdfJs.getDocument(arrayBuffer).promise;
         const page = await pdf.getPage(pageIndex);
 
         if (!mounted) return;
@@ -108,7 +119,7 @@ function PageThumbnail({ pageIndex, file, isSelected, onClick }: PageThumbnailPr
     return () => {
       mounted = false;
     };
-  }, [file, pageIndex]);
+  }, [file, pageIndex, pdfJs]);
 
   return (
     <div
